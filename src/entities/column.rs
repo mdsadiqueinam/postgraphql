@@ -10,6 +10,18 @@ pub struct TextDataType {
     pub set_name: Option<String>,
 }
 
+impl TextDataType {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            maximum: row.get("maximum"),
+            octet_length: row.get("octet_length"),
+            set_catalog: row.get("set_catalog"),
+            set_schema: row.get("set_schema"),
+            set_name: row.get("set_name"),
+        }
+    }
+}
+
 /// Numeric-based types
 #[derive(Debug, Serialize, Deserialize)]
 pub struct NumericDataType {
@@ -18,12 +30,32 @@ pub struct NumericDataType {
     pub radix: Option<i32>,
 }
 
+impl NumericDataType {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            precision: row.get("precision"),
+            scale: row.get("scale"),
+            radix: row.get("radix"),
+        }
+    }
+}
+
 /// Temporal (date/time/interval) types
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TemporalDataType {
     pub datetime_precision: Option<i32>,
     pub interval_type: Option<String>,
     pub interval_precision: Option<i32>,
+}
+
+impl TemporalDataType {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            datetime_precision: row.get("datetime_precision"),
+            interval_type: row.get("interval_type"),
+            interval_precision: row.get("interval_precision"),
+        }
+    }
 }
 
 /// Identity/serial metadata
@@ -35,6 +67,19 @@ pub struct IdentityDataType {
     pub maximum: Option<String>,
     pub minimum: Option<String>,
     pub cycle: bool,
+}
+
+impl IdentityDataType {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            generation: row.get("generation"),
+            start: row.get("start"),
+            increment: row.get("increment"),
+            maximum: row.get("maximum"),
+            minimum: row.get("minimum"),
+            cycle: row.get("cycle"),
+        }
+    }
 }
 
 /// Supported column data types
@@ -83,9 +128,44 @@ pub enum ColumnDataType {
     Other(String),
 }
 
+impl ColumnDataType {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        let data_type = row.get::<_, String>("data_type");
+        match data_type.as_str() {
+            "varchar" | "text" | "char" | "name" => Self::Text(TextDataType::from_row(row)),
+            "smallint" => Self::SmallInt,
+            "int4" => Self::Integer,
+            "int8" => Self::BigInt,
+            "numeric" | "decimal" => Self::Numeric(NumericDataType::from_row(row)),
+            "float4" => Self::Real,
+            "float8" => Self::DoublePrecision,
+            "oid" => Self::Oid,
+            "xid" => Self::Xid,
+            "bool" => Self::Boolean,
+            "date" => Self::Date,
+            "timestamp with time zone" => Self::TimestampWithTimeZone(TemporalDataType::from_row(row)),
+            "interval" => Self::Interval(TemporalDataType::from_row(row)),
+            "inet" => Self::Inet,
+            "uuid" => Self::Uuid,
+            "regproc" => Self::RegProc,
+            "regtype" => Self::RegType,
+            "bytea" => Self::Bytea,
+            "pg_lsn" => Self::PgLsn,
+            "pg_dependencies" => Self::PgDependencies,
+            "pg_node_tree" => Self::PgNodeTree,
+            "pg_nd_distinct" => Self::PgNdDistinct,
+            "pg_mcv_list" => Self::PgMcvList,
+            "anyarray" => Self::AnyArray,
+            "array" => Self::Array,
+            _ => Self::Other(row.get("data_type")),
+        }
+    }
+}
+
 /// Column abstraction
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Column {
+    pub table_name: String,
     pub name: String,
     pub ordinal_position: i32,
     pub data_type: ColumnDataType,
@@ -97,4 +177,23 @@ pub struct Column {
     pub is_foreign_key: bool,
     pub default_value: Option<String>,
     pub comment: Option<String>,
+}
+
+impl Column {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            table_name: row.get("table_name"),
+            name: row.get("name"),
+            ordinal_position: row.get("ordinal_position"),
+            data_type: ColumnDataType::from_row(row),
+            is_primary_key: row.get("is_primary_key"),
+            is_unique: row.get("is_unique"),
+            is_nullable: row.get("is_nullable"),
+            foreign_table_name: row.get("foreign_table_name"),
+            foreign_column_name: row.get("foreign_column_name"),
+            is_foreign_key: row.get("is_foreign_key"),
+            default_value: row.get("default_value"),
+            comment: row.get("comment"),
+        }
+    }
 }

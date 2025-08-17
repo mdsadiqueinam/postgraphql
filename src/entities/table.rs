@@ -6,3 +6,14 @@ pub struct Table {
     r#type: String,
     columns: Vec<Column>,
 }
+
+impl Table {
+    fn from_row(row: &tokio_postgres::Row) -> Self {
+        Self {
+            schema: row.get("schema"),
+            name: row.get("name"),
+            r#type: row.get("type"),
+            columns: Vec::new(),
+        }
+    }
+}
