@@ -1,14 +1,14 @@
 use super::column::Column;
 
 pub struct Table {
-    schema: String,
-    name: String,
-    r#type: String,
-    columns: Vec<Column>,
+    pub schema: String,
+    pub name: String,
+    pub r#type: String,
+    pub columns: Vec<Column>,
 }
 
 impl Table {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub(crate) fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             schema: row.get("schema"),
             name: row.get("name"),
@@ -17,11 +17,11 @@ impl Table {
         }
     }
 
-    fn add_column(&mut self, column: Column) {
+    pub(crate) fn add_column(&mut self, column: Column) {
         self.columns.push(column);
     }
 
-    fn add_column_from_row(&mut self, row: &tokio_postgres::Row) {
+    pub(crate) fn add_column_from_row(&mut self, row: &tokio_postgres::Row) {
         let column = Column::from_row(row);
         self.add_column(column);
     }

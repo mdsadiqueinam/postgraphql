@@ -1,4 +1,4 @@
-pub(crate) const COLUMN_QUERY: &str = "
+pub const COLUMN_QUERY: &str = "
     SELECT
     col.table_schema,
     col.table_name,
@@ -87,7 +87,7 @@ GROUP BY
 ORDER BY col.table_name, col.ordinal_position
 ";
 
-pub(crate) const TABLE_QUERY: &str = "
+pub const TABLE_QUERY: &str = "
     SELECT t.*, d.description AS comment
     FROM information_schema.tables t
             JOIN pg_class c
