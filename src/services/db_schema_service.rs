@@ -3,12 +3,25 @@ use deadpool_postgres::Client;
 use tokio_postgres::Error;
 
 use super::constant_queries::{TABLE_QUERY, COLUMN_QUERY};
-use crate::entities::table::Table;
+use crate::entities::{column::{Column}, table::*};
 
 /// Fetch table info for the given schema
 async fn get_table_info(client: &Client, schema: &[&str]) -> Result<Vec<Table>, Error> {
     let rows = client.query(TABLE_QUERY, &[&schema]).await?;
     Ok(rows.into_iter().map(|row| Table::from_row(&row)).collect())
+}
+
+async fn check_and_create_relation(column: &Column, tables: &mut [Table], table_map: &HashMap<String, usize>) -> Result<(), std::io::Error> {
+    // Find the table that the column belongs to
+    if (column.is_foreign_key) {
+        let foreign_table_name = column.foreign_table_name.as_ref().ok_or_else(|| {
+            std::io::Error::from(std::io::Error::new(std::io::ErrorKind::InvalidData, "Foreign table name is missing"))
+        })?;
+        let foreign_column_name = column.foreign_column_name.as_ref().ok_or_else(|| {
+            std::io::Error::from(std::io::Error::new(std::io::ErrorKind::InvalidData, "Foreign column name is missing"))
+        })?;
+    }
+    Ok(())
 }
 
 /// Map columns into the tables by mutating the given `tables`
@@ -32,7 +45,8 @@ async fn map_column_info<'a>(
         let table_name: &str = row.get("table_name");
         if let Some(index) = table_map.get(table_name) {
             let table = &mut tables[*index];
-            table.add_column_from_row(&row);
+            let column = Column::from_row(&row);
+            table.add_column(column);
         }
     }
     Ok(())
