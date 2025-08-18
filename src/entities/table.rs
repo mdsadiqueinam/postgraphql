@@ -16,4 +16,13 @@ impl Table {
             columns: Vec::new(),
         }
     }
+
+    fn add_column(&mut self, column: Column) {
+        self.columns.push(column);
+    }
+
+    fn add_column_from_row(&mut self, row: &tokio_postgres::Row) {
+        let column = Column::from_row(row);
+        self.add_column(column);
+    }
 }

@@ -11,7 +11,7 @@ pub struct TextDataType {
 }
 
 impl TextDataType {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             maximum: row.get("maximum"),
             octet_length: row.get("octet_length"),
@@ -31,7 +31,7 @@ pub struct NumericDataType {
 }
 
 impl NumericDataType {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             precision: row.get("precision"),
             scale: row.get("scale"),
@@ -49,7 +49,7 @@ pub struct TemporalDataType {
 }
 
 impl TemporalDataType {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             datetime_precision: row.get("datetime_precision"),
             interval_type: row.get("interval_type"),
@@ -70,7 +70,7 @@ pub struct IdentityDataType {
 }
 
 impl IdentityDataType {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             generation: row.get("generation"),
             start: row.get("start"),
@@ -129,7 +129,7 @@ pub enum ColumnDataType {
 }
 
 impl ColumnDataType {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         let data_type = row.get::<_, String>("data_type");
         match data_type.as_str() {
             "varchar" | "text" | "char" | "name" => Self::Text(TextDataType::from_row(row)),
@@ -180,7 +180,7 @@ pub struct Column {
 }
 
 impl Column {
-    fn from_row(row: &tokio_postgres::Row) -> Self {
+    pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             table_name: row.get("table_name"),
             name: row.get("name"),
