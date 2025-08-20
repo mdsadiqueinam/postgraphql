@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 /// Text-based types
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TextDataType {
     pub maximum: Option<i32>,
     pub octet_length: Option<i32>,
@@ -13,17 +13,17 @@ pub struct TextDataType {
 impl TextDataType {
     pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
-            maximum: row.get("maximum"),
-            octet_length: row.get("octet_length"),
-            set_catalog: row.get("set_catalog"),
-            set_schema: row.get("set_schema"),
-            set_name: row.get("set_name"),
+            maximum: row.get("character_maximum_length"),
+            octet_length: row.get("character_octet_length"),
+            set_catalog: row.get("character_set_catalog"),
+            set_schema: row.get("character_set_schema"),
+            set_name: row.get("character_set_name"),
         }
     }
 }
 
 /// Numeric-based types
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct NumericDataType {
     pub precision: Option<i32>,
     pub scale: Option<i32>,
@@ -33,15 +33,15 @@ pub struct NumericDataType {
 impl NumericDataType {
     pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
-            precision: row.get("precision"),
-            scale: row.get("scale"),
-            radix: row.get("radix"),
+            precision: row.get("numeric_precision"),
+            scale: row.get("numeric_precision_scale"),
+            radix: row.get("numeric_radix"),
         }
     }
 }
 
 /// Temporal (date/time/interval) types
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TemporalDataType {
     pub datetime_precision: Option<i32>,
     pub interval_type: Option<String>,
@@ -59,7 +59,7 @@ impl TemporalDataType {
 }
 
 /// Identity/serial metadata
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct IdentityDataType {
     pub generation: Option<String>, // "ALWAYS" / "BY DEFAULT"
     pub start: Option<String>,
@@ -72,18 +72,18 @@ pub struct IdentityDataType {
 impl IdentityDataType {
     pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
-            generation: row.get("generation"),
-            start: row.get("start"),
-            increment: row.get("increment"),
-            maximum: row.get("maximum"),
-            minimum: row.get("minimum"),
-            cycle: row.get("cycle"),
+            generation: row.get("identity_generation"),
+            start: row.get("identity_start"),
+            increment: row.get("identity_increment"),
+            maximum: row.get("identity_maximum"),
+            minimum: row.get("identity_minimum"),
+            cycle: row.get("identity_cycle"),
         }
     }
 }
 
 /// Supported column data types
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ColumnDataType {
     // Text-like
     Text(TextDataType),       // varchar, text, char, name
@@ -163,7 +163,7 @@ impl ColumnDataType {
 }
 
 /// Column abstraction
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Column {
     pub table_name: String,
     pub name: String,
@@ -172,27 +172,34 @@ pub struct Column {
     pub is_primary_key: bool,
     pub is_unique: bool,
     pub is_nullable: bool,
+    pub is_generated: bool,
+    pub is_foreign_key: bool,
     pub foreign_table_name: Option<String>,
     pub foreign_column_name: Option<String>,
-    pub is_foreign_key: bool,
     pub default_value: Option<String>,
     pub comment: Option<String>,
 }
 
 impl Column {
     pub fn from_row(row: &tokio_postgres::Row) -> Self {
+        let is_nullable: String = row.get("is_nullable");
+        let is_primary_key: Option<bool> = row.get("is_primary_key");
+        let is_unique: Option<bool> = row.get("is_unique");
+        let is_generated: Option<String> = row.get("is_generated");
+        
         Self {
             table_name: row.get("table_name"),
-            name: row.get("name"),
+            name: row.get("column_name"),
             ordinal_position: row.get("ordinal_position"),
             data_type: ColumnDataType::from_row(row),
-            is_primary_key: row.get("is_primary_key"),
-            is_unique: row.get("is_unique"),
-            is_nullable: row.get("is_nullable"),
+            is_primary_key: is_primary_key.unwrap_or(false),
+            is_unique: is_unique.unwrap_or(false),
+            is_nullable: is_nullable == "YES",
+            is_generated: is_generated == Some("YES".into()),
             foreign_table_name: row.get("foreign_table_name"),
             foreign_column_name: row.get("foreign_column_name"),
             is_foreign_key: row.get("is_foreign_key"),
-            default_value: row.get("default_value"),
+            default_value: row.get("column_default"),
             comment: row.get("comment"),
         }
     }

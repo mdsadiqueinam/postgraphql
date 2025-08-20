@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use deadpool_postgres::Client;
-use tokio_postgres::Error;
+use tokio_postgres::{Error};
 
 use super::constant_queries::{TABLE_QUERY, COLUMN_QUERY};
 use crate::entities::{column::{Column}, table::*};
@@ -75,4 +75,21 @@ pub async fn get_schema_info(client: &Client, schema: &[&str]) -> Result<Vec<Tab
     }
 
     Ok(tables)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::create_pool;
+
+    const SCHEMA: &[&str] = &["public"];
+    const DB_URL: &str = "postgres://postgres:Aa123456@localhost/app-success-co";
+
+    #[tokio::test]
+    async fn test_get_schema_info() {
+       let pool = create_pool(crate::PoolOrConfig::DatabaseUrl(DB_URL.to_string()));
+       let client = pool.get().await.unwrap();
+       let result = super::get_schema_info(&client, SCHEMA).await;
+       println!("Schema info: {:?}", result);
+       assert!(result.is_ok());
+    }
 }
