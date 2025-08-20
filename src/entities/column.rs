@@ -34,8 +34,8 @@ impl NumericDataType {
     pub fn from_row(row: &tokio_postgres::Row) -> Self {
         Self {
             precision: row.get("numeric_precision"),
-            scale: row.get("numeric_precision_scale"),
-            radix: row.get("numeric_radix"),
+            scale: row.get("numeric_scale"),
+            radix: row.get("numeric_precision_radix"),
         }
     }
 }
@@ -185,6 +185,7 @@ impl Column {
         let is_nullable: String = row.get("is_nullable");
         let is_primary_key: Option<bool> = row.get("is_primary_key");
         let is_unique: Option<bool> = row.get("is_unique");
+        let is_foreign_key: Option<bool> = row.get("is_foreign_key");
         let is_generated: Option<String> = row.get("is_generated");
         
         Self {
@@ -198,7 +199,7 @@ impl Column {
             is_generated: is_generated == Some("YES".into()),
             foreign_table_name: row.get("foreign_table_name"),
             foreign_column_name: row.get("foreign_column_name"),
-            is_foreign_key: row.get("is_foreign_key"),
+            is_foreign_key: is_foreign_key.unwrap_or(false),
             default_value: row.get("column_default"),
             comment: row.get("comment"),
         }
