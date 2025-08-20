@@ -89,7 +89,6 @@ mod tests {
        let pool = create_pool(crate::PoolOrConfig::DatabaseUrl(DB_URL.to_string()));
        let client = pool.get().await.unwrap();
        let result = super::get_schema_info(&client, SCHEMA).await;
-       println!("Schema info: {:?}", result);
        assert!(result.is_ok());
     }
 }
